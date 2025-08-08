@@ -34,14 +34,16 @@ void printJoystick() {
 
 void getJoystickDirection() {
   int xValue = analogRead(JOY_X_PIN);
+  int yValue = analogRead(JOY_Y_PIN);
   bool isPressed = digitalRead(JOY_BTN_PIN) == LOW;  // Active LOW button
 
   if(isPressed) setDirection(JoystickDirection::PRESS);
   else 
-  if(xValue > 3200) setDirection(JoystickDirection::UP);
-  else if (xValue < 2200) setDirection(JoystickDirection::DOWN);
+  if(xValue > 4000) setDirection(JoystickDirection::UP);
+  else if (xValue < 300) setDirection(JoystickDirection::DOWN);
+  else if (yValue < 300) setDirection(JoystickDirection::LEFT);
   else setDirection(JoystickDirection::NONE);
   // Serial.printf("Xvalue = %d\n", xValue);
-  Serial.println((int)getDirection());
+  // Serial.println((int)getDirection());
 
 }

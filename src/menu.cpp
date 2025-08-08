@@ -2,6 +2,7 @@
 
 #include "joystick.h"
 #include "screen.h"
+#include <wifi_tools.h>
 
 const char* menuItems[] = {
   "Wi-Fi Scanner",
@@ -13,6 +14,7 @@ const char* menuItems[] = {
 };
 const int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
 int selectedItem = 0;
+bool mainMenu = true;
 TFT_eSPI* tft = getTFT();
 
 void initMenu() {
@@ -36,6 +38,7 @@ void updateMenu() {
   int previousItem = selectedItem;
   int direction = 0;
 //   Serial.println((int)getDirection());
+
   switch (getDirection()) {
     case JoystickDirection::UP: 
         direction = -1; 
@@ -45,13 +48,18 @@ void updateMenu() {
         direction = 1; 
         Serial.println("Joystick down");
         break;
+    case JoystickDirection::LEFT:
+        if(!mainMenu) drawMenu();
+        mainMenu = true;
     default: 
         direction = 0; 
         break;
   }
 //   Serial.printf("UpdateMenu func started! Direction = %d\n", direction);
-  selectedItem = (selectedItem + direction + menuItemCount) % menuItemCount;
-  if(previousItem != selectedItem) drawMenu();
+  if(mainMenu){
+    selectedItem = (selectedItem + direction + menuItemCount) % menuItemCount;
+    if(previousItem != selectedItem) drawMenu();
+  } else selectedItem = previousItem;
 }
 
 void displayHeartAscii() {
@@ -79,23 +87,31 @@ void displayHeartAscii() {
   
     tft->setTextColor(TFT_PINK, TFT_BLACK);
     tft->drawString("I <3 U Anda", 50, y + 120);
-    delay(2000);
+    // delay(2000);
   }
 
+
 void handleMenuPress() {
-    if (strcmp(menuItems[selectedItem], "Anda <3") == 0) {
-        displayHeartAscii();
-      } else {
-        tft->fillScreen(TFT_BLACK);
-        tft->setTextColor(TFT_GREEN);
-        tft->setTextSize(2);
-        tft->drawString("Selected:", 20, 30);
-        tft->drawString(menuItems[selectedItem], 20, 60);
-        delay(1000);
-      }
-    
-      drawMenu();
-    }
+  mainMenu = false;
+  switch (selectedItem) {
+    case 0:
+      initWiFiScanner();
+      startWiFiScan();
+      break;
+    case 5:
+      displayHeartAscii();
+      break;
+    default:
+      tft->fillScreen(TFT_BLACK);
+      tft->setTextColor(TFT_GREEN);
+      tft->drawString("Selected:", 20, 30);
+      tft->drawString(menuItems[selectedItem], 20, 60);
+      // delay(1000);
+      break;
+  }
+
+  // drawMenu();
+}
 
 const char* getSelectedItem() {
   return menuItems[selectedItem];

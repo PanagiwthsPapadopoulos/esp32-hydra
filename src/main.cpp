@@ -27,5 +27,7 @@ void loop() {
       handleMenuPress();
     }
   }
+  // Serial.println("Reached main loop!");
+  // delay(100);
   // printJoystick();
 }
