@@ -2,7 +2,7 @@
 #include "joystick.h"
 
 #define JOY_X_PIN 25
-#define JOY_Y_PIN 26
+#define JOY_Y_PIN 34
 #define JOY_BTN_PIN 27
 
 JoystickDirection currentDirection = JoystickDirection::NONE;

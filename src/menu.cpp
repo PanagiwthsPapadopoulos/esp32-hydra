@@ -6,39 +6,71 @@
 
 const char* menuItems[] = {
   "Wi-Fi Scanner",
-  "Bluetooth Jammer",
   "Deauth Attack",
+  "Bluetooth Jammer",
   "Sniffer Mode",
   "Settings",
   "Anda <3"
 };
+
+char** menuItemsSecondary = nullptr;
+
 const int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
+int menuItemCountSecondary = 0;
+
 int selectedItem = 0;
-bool mainMenu = true;
 TFT_eSPI* tft = getTFT();
 
+MenuState currentMenu = MenuState::MAIN_MENU;
+
+
 void initMenu() {
+  drawMenu();
+}
+
+MenuState getMenuState() {
+  return currentMenu;
+}
+
+void setMenuState(MenuState newMenuState) {
+  currentMenu = newMenuState;
+  menuItemCountSecondary = 0;
+  selectedItem = 0;
   drawMenu();
 }
 
 void drawMenu() {
   tft->fillScreen(TFT_BLACK);
   tft->setTextSize(2);  // Double size text (default is 1)
-  for (int i = 0; i < menuItemCount; i++) {
-    if (i == selectedItem) {
-      tft->setTextColor(TFT_BLACK, TFT_GREEN);
-    } else {
-      tft->setTextColor(TFT_WHITE, TFT_BLACK);
+
+  if (currentMenu == MenuState::MAIN_MENU) {
+    for (int i = 0; i < menuItemCount; i++) {
+      if (i == selectedItem) {
+        tft->setTextColor(TFT_BLACK, TFT_GREEN);
+      } else {
+        tft->setTextColor(TFT_WHITE, TFT_BLACK);
+      }
+      tft->drawString(menuItems[i], 20, 30 + i * 30);
     }
-    tft->drawString(menuItems[i], 20, 30 + i * 30);
+  } else {
+    for (int i = 0; i < menuItemCountSecondary; i++) {
+      if (i == selectedItem) {
+        tft->setTextColor(TFT_BLACK, TFT_GREEN);
+      } else {
+        tft->setTextColor(TFT_WHITE, TFT_BLACK);
+      }
+      tft->drawString(menuItemsSecondary[i], 20, 30 + i * 30);  // ✅ fixed this line
+    }
   }
 }
 
 void updateMenu() {
   int previousItem = selectedItem;
   int direction = 0;
-//   Serial.println((int)getDirection());
 
+  // Serial.printf("Menu = %d\n", (int)currentMenu);
+
+  // Default UP/DOWN navigation for all menus
   switch (getDirection()) {
     case JoystickDirection::UP: 
         direction = -1; 
@@ -49,17 +81,27 @@ void updateMenu() {
         Serial.println("Joystick down");
         break;
     case JoystickDirection::LEFT:
-        if(!mainMenu) drawMenu();
-        mainMenu = true;
+        if(currentMenu != MenuState::MAIN_MENU){
+          Serial.println("Joystick left");
+          setMenuState(MenuState::MAIN_MENU);
+          
+        }
+        break;
     default: 
         direction = 0; 
         break;
   }
+
+  // Update selected item variable
+  int itemCount = (currentMenu == MenuState::MAIN_MENU) ? menuItemCount : menuItemCountSecondary;
+  if(itemCount>0)selectedItem = (selectedItem + direction + itemCount) % itemCount;
+  // If another item is selected, redraw menu
+  if(previousItem != selectedItem) drawMenu();
+
+  
+  
 //   Serial.printf("UpdateMenu func started! Direction = %d\n", direction);
-  if(mainMenu){
-    selectedItem = (selectedItem + direction + menuItemCount) % menuItemCount;
-    if(previousItem != selectedItem) drawMenu();
-  } else selectedItem = previousItem;
+
 }
 
 void displayHeartAscii() {
@@ -92,22 +134,34 @@ void displayHeartAscii() {
 
 
 void handleMenuPress() {
-  mainMenu = false;
-  switch (selectedItem) {
-    case 0:
-      initWiFiScanner();
-      startWiFiScan();
-      break;
-    case 5:
-      displayHeartAscii();
-      break;
-    default:
-      tft->fillScreen(TFT_BLACK);
-      tft->setTextColor(TFT_GREEN);
-      tft->drawString("Selected:", 20, 30);
-      tft->drawString(menuItems[selectedItem], 20, 60);
-      // delay(1000);
-      break;
+
+  if(currentMenu == MenuState::WIFI_DEAUTH) {
+    setMenuState(MenuState::WIFI_DEAUTH_ATTACK);
+    selectTargetAP(selectedItem);
+    startDeauth();
+  } else if(currentMenu == MenuState::MAIN_MENU) {
+    switch (selectedItem) {
+      case 0:
+        setMenuState(MenuState::WIFI_SCANNER);
+        initWiFiScanner();
+        startWiFiScan();
+        break;
+      case 1:
+        setMenuState(MenuState::WIFI_DEAUTH);
+        scanForAPs();
+        break;
+      case 5:
+        setMenuState(MenuState::HEART_ASCII);
+        displayHeartAscii();
+        break;
+      default:
+        tft->fillScreen(TFT_BLACK);
+        tft->setTextColor(TFT_GREEN);
+        tft->drawString("Selected:", 20, 30);
+        tft->drawString(menuItems[selectedItem], 20, 60);
+        // delay(1000);
+        break;
+    }
   }
 
   // drawMenu();
@@ -118,5 +172,9 @@ const char* getSelectedItem() {
 }
 
 
-
+void populateSecondaryMenu(char* items[], int count) {
+  menuItemsSecondary = items;
+  menuItemCountSecondary = count;
+  drawMenu();
+}
   

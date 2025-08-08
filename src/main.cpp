@@ -3,6 +3,7 @@
 #include "menu.h"
 #include "timer.h"
 #include "screen.h"
+#include <wifi_tools.h>
 
 
 
@@ -26,6 +27,10 @@ void loop() {
     if (getDirection() == JoystickDirection::PRESS) {
       handleMenuPress();
     }
+  }
+
+  if (isDeauthRunning()) {
+    handleDeauthLoop();
   }
   // Serial.println("Reached main loop!");
   // delay(100);
